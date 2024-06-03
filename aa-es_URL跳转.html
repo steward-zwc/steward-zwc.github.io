@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+  <title>aa/eService跳转</title>
+</head>
+
+<body>
+  <h1>AA:SIT环境跳转</h1>
+  <button onclick="loginHKAA()" class="defaultLogin" title="https://uat-eservices.fwd.com.hk/aa2/fwd/landing/agpt/06021/token">一键访问HK AA2 -06021</button>
+  <button onclick="loginMCAA()" class="defaultLogin" title="https://uat-eservices.fwd.com.hk/MCaa2/fwd/landing/agpt/80002/token">一键访问 MC AA2 -80002</button>
+  <button onclick="logineService()" class="defaultLogin" title="https://uat-eservices.fwd.com.hk/web31/fwd/login/index">一键访问 eService web31</button>
+
+  <h6>选择SIT环境(默认访问HK AA，在复选框打√则访问Macau AA)</h6>
+  <input type="text" class="displayCity" id="display">
+  <input type="checkbox" class="selectCity" id="checkbox">
+  <!-- <input type="text" class="displayCity" id="display"> -->
+
+  <input type="text" id="input_sit_env" placeholder="请输入环境序号，例如6 则会访问 aa6 ">
+  <h6>输入AgentId (如：06021 / 80002)</h6>
+  <input type="text" class="copyId" id="displayId">
+  <input type="text" id="input_sit_agent_code" placeholder="请输入agentId" class="number">
+  <button onclick="openAASit()">Go To SIT AA</button>
+
+  <h1>eService:SIT环境跳转</h1>
+  <h6>输入web的序号数字 (如:31) &nbsp;es密码: 0000@Fwd</h6>
+  <input type="text" id="input_web_number" placeholder="请输入环境序号#例如31">
+  <button id="eService" onclick="openeService()">Go To SIT eService</button>
+
+  <p>常用test data:</p>
+  <p>Visa 16位卡号: 4508751050003820  &nbsp;&nbsp; FWD CC : 6250290003006666</p>
+  <p>HK ID: K1226878 C8176459 P2962369  D6002693 Q8382871 <a href="https://pinkylam.me/playground/hkid/">点击跳转到在线生成HKID网址</a></p>
+
+  <textarea class="edit" type="text" placeholder="临时记事本"></textarea>
+
+  <h1>AA:Local跳转</h1>
+  <input type="text" id="input_local" placeholder="请输入AgentId,例如'06021'">
+  <button onclick="openLocal()">Go To Local AA</button>
+
+  <script>
+    const cityAA='HK AA'
+    function openLocal() {
+      if (document.getElementById('input_local').value.length < 5) {
+        alert('请输入正确的代理号码');
+        return;
+      }
+      window.open('http://localhost:4200/fwd/landing/agtp/' + document.getElementById('input_local').value + '/token');
+    }
+    function openAASit() {
+      if (document.getElementById('input_sit_agent_code').value.length < 5) {
+        alert('请输入正确的代理号码');
+        return;
+      }
+      
+      window.open('https://uat-eservices.fwd.com.hk/' + display.value+document.getElementById('input_sit_env').value + '/fwd/landing/agpt/' + document.getElementById('input_sit_agent_code').value.trim() + '/token');
+    }
+
+    function openeService() {
+      window.open('https://uat-eservices.fwd.com.hk/web' + document.getElementById('input_web_number').value + '/fwd/login/index');
+    }
+
+    function loginHKAA() {
+      window.open('https://uat-eservices.fwd.com.hk/aa2/fwd/landing/agpt/06021/token');
+    }
+    function loginMCAA() {
+      window.open("https://uat-eservices.fwd.com.hk/MCaa2/fwd/landing/agpt/80002/token");
+    }
+
+    function logineService() {
+      window.open("https://uat-eservices.fwd.com.hk/web31/fwd/login/index");
+    }
+
+
+    const inputList = [
+      {
+      id: 'input_local',
+      fun: openLocal
+      },
+      {
+      id: 'input_sit_agent_code',
+      fun: openAASit
+      },
+      {
+      id: 'input_sit_env',
+      fun: openAASit
+      },
+      {
+      id: 'input_web_number',
+      fun: openeService
+      }
+  ]
+    inputList.forEach((item) => {
+      const input = document.getElementById(item.id);
+      input.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") {
+          item.fun()
+        }
+      });
+    })
+
+    //选择HK AA 或 Macau AA
+    const checkbox = document.getElementById('checkbox');
+    const display = document.getElementById('display');
+    const displayAgentId = document.getElementById('displayId');
+    const hkAgentId = '常用:06021 06035 06734 16548 08431 22749'
+    const mcAgentId = '常用:80002 80101 80702 81273 80308 80425 '
+    display.value = checkbox.checked ? 'MCaa' : 'aa';
+    displayAgentId.value = checkbox.checked ? mcAgentId : hkAgentId;
+
+    checkbox.addEventListener('change', function() {
+      display.value = checkbox.checked ? 'MCaa' : 'aa';
+      displayAgentId.value = checkbox.checked ? mcAgentId : hkAgentId;
+    });
+
+
+  </script>
+
+
+
+
+  <style>
+    button {
+      background-color: orange;
+      border: none;
+      color: white;
+      padding: 15px 32px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+    .defaultLogin{
+      background-color: yellowgreen;
+      width: 180px;
+      height: 50px;
+      border: none;
+      color: white;
+      padding: 15px 15px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 12px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+
+    button:hover {
+      background-color: #4CAF50;
+    }
+
+    input {
+      padding: 10px;
+      margin: 10px;
+      width: 400px;
+    }
+
+    h1 {
+      margin: 5px;
+    }
+
+    h6,p {
+      padding: 10px;
+      margin: 1px 0;
+      font-size: 12px;
+    }
+
+    .edit{
+      width: 500px;
+      height: 200px;
+      padding: 10px;
+      margin: 10px;
+    }
+    .city{
+      width: 80px;
+    }
+    .selectCity{
+      width: 20px;
+      height: 20px;
+      border-color: blue;
+    }
+    .displayCity{
+      width: 50px;
+      border: none;
+      border-radius: 20%;
+      background-color: aqua;
+      font-size: 18px;
+    }
+
+    .number{
+      width: 100px;
+    }
+
+    .copyId{
+      border: none;
+      width: 300px;
+
+    }
+  
+
+
+  </style>
+
+
+</body>
+
+</html>
