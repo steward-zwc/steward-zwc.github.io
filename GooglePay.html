@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Google Pay Test</title>
+    <script src="https://pay.google.com/gp/p/js/pay.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/md5@2.3.0/dist/md5.min.js"></script>
+</head>
+<body>
+    <h3>Google Pay 测试</h3>
+    <div id="container"></div>
+    <pre id="result" style="word-break:break-all;white-space:pre-wrap;font-size:12px"></pre>
+
+<script>
+const BACKEND_URL = 'https://paygwuat.hthk.com/gp/devicePayments';
+
+const PORTAL_ID       = '105';
+const PORTAL_PASSWORD = 'passw@rd';
+const ORDER_AMOUNT    = '1.00';
+const ORDER_CURRENCY  = 'HKD';
+
+function calcSign(merchantRef) {
+    const plaintext = PORTAL_ID + ':' + PORTAL_PASSWORD + ':' + merchantRef + ':' + ORDER_AMOUNT + ':' + ORDER_CURRENCY;
+    console.log('签名明文:', plaintext);
+    return md5(plaintext);
+}
+
+const paymentsClient = new google.payments.api.PaymentsClient({
+    environment: 'TEST'
+});
+
+const paymentRequest = {
+    apiVersion: 2,
+    apiVersionMinor: 0,
+    allowedPaymentMethods: [{
+        type: 'CARD',
+        parameters: {
+            allowedAuthMethods: ['PAN_ONLY', 'CRYPTOGRAM_3DS'],
+            allowedCardNetworks: ['VISA', 'MASTERCARD']
+        },
+        tokenizationSpecification: {
+            type: 'PAYMENT_GATEWAY',
+            parameters: {
+                gateway: 'mastercard',
+                gatewayMerchantId: '088028664208'
+            }
+        }
+    }],
+    merchantInfo: {
+        merchantId: 'TEST',
+        merchantName: 'Test Merchant'
+    },
+    transactionInfo: {
+        totalPriceStatus: 'FINAL',
+        totalPrice: ORDER_AMOUNT,
+        currencyCode: ORDER_CURRENCY,
+        countryCode: 'HK'
+    }
+};
+
+paymentsClient.isReadyToPay({
+    apiVersion: 2,
+    apiVersionMinor: 0,
+    allowedPaymentMethods: paymentRequest.allowedPaymentMethods
+}).then(response => {
+    if (response.result) {
+        const button = paymentsClient.createButton({
+            onClick: () => {
+                paymentsClient.loadPaymentData(paymentRequest).then(paymentData => {
+                    const token = paymentData.paymentMethodData.tokenizationData.token;
+                    document.getElementById('result').textContent = 'Token 已获取，提交中...';
+                    submitPayment(token);
+                }).catch(err => {
+                    document.getElementById('result').textContent = 'Google Pay 错误:\n' + JSON.stringify(err, null, 2);
+                });
+            }
+        });
+        document.getElementById('container').appendChild(button);
+        document.getElementById('result').textContent = 'Google Pay 按钮已加载，点击开始测试';
+    } else {
+        document.getElementById('result').textContent = '此设备不支持 Google Pay';
+    }
+}).catch(err => {
+    document.getElementById('result').textContent = 'isReadyToPay 错误:\n' + JSON.stringify(err, null, 2);
+});
+
+function submitPayment(token) {
+    const merchantRef = 'TEST_GP_' + Date.now();
+    const sign = calcSign(merchantRef);
+
+    const body = {
+        portalId:      PORTAL_ID,
+        merchantRef:   merchantRef,
+        orderDesc:     'Google Pay Test Order',
+        orderAmount:   1.00,
+        orderCurrency: ORDER_CURRENCY,
+        locale:        'zh_HK',
+        midId:         'GP_GOOGLE_PAY',
+        payMethod:     'GOOGLE_PAY',
+        paymentToken:  token,
+        sign:          sign
+    };
+
+    document.getElementById('result').textContent = '请求参数:\n' + JSON.stringify(body, null, 2);
+
+    fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('result').textContent += '\n\n后端响应:\n' + JSON.stringify(data, null, 2);
+    })
+    .catch(err => {
+        document.getElementById('result').textContent += '\n\n请求失败:\n' + err.message;
+    });
+}
+</script>
+</body>
+</html>
