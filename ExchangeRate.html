@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>汇率换算器</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Noto+Sans+SC:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f5f2ec;
+            --bg-warm: #ece7dd;
+            --surface: #ffffff;
+            --ink: #1a1714;
+            --ink-light: #5c564d;
+            --ink-muted: #9e968a;
+            --accent: #c45d3e;
+            --accent-soft: rgba(196, 93, 62, 0.08);
+            --border: #d8d2c8;
+            --success: #4a8c5c;
+            --error: #c44040;
+            --radius: 14px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+            background-image:
+                radial-gradient(circle at 15% 20%, rgba(196, 93, 62, 0.04) 0%, transparent 50%),
+                radial-gradient(circle at 85% 80%, rgba(74, 140, 92, 0.03) 0%, transparent 50%);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        .header h1 {
+            font-family: 'Instrument Serif', serif;
+            font-size: 2.6rem;
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            color: var(--ink);
+        }
+
+        .header h1 em {
+            font-style: italic;
+            color: var(--accent);
+        }
+
+        .header .subtitle {
+            font-size: 0.9rem;
+            color: var(--ink-muted);
+            margin-top: 0.4rem;
+            font-weight: 300;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 0.8rem;
+            font-size: 0.78rem;
+            color: var(--ink-muted);
+            background: var(--surface);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .status-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .status-dot.ok { background: var(--success); }
+        .status-dot.loading { background: #d4a843; animation: blink 0.8s infinite; }
+        .status-dot.err { background: var(--error); }
+
+        @keyframes blink {
+            0%,100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 480px;
+            padding: 2rem;
+            box-shadow: 0 2px 20px rgba(26, 23, 20, 0.06);
+            animation: fadeUp 0.6s 0.1s ease both;
+        }
+
+        .presets {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.8rem;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            font-family: 'DM Mono', monospace;
+            font-size: 0.78rem;
+            padding: 6px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--ink-light);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .preset-btn:hover, .preset-btn.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .field { margin-bottom: 1.2rem; }
+
+        .field-label {
+            font-size: 0.78rem;
+            color: var(--ink-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.5rem;
+            font-weight: 400;
+        }
+
+        .field-row {
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        .field-input {
+            flex: 1;
+            font-family: 'DM Mono', monospace;
+            font-size: 1.5rem;
+            font-weight: 500;
+            padding: 0.9rem 1rem;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg);
+            color: var(--ink);
+            outline: none;
+            transition: border-color 0.2s;
+            min-width: 0;
+        }
+
+        .field-input:focus { border-color: var(--accent); }
+        .field-input::placeholder { color: var(--ink-muted); font-weight: 400; }
+
+        .currency-picker {
+            width: 130px;
+            flex-shrink: 0;
+            font-family: 'DM Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: 500;
+            padding: 0.9rem 0.8rem;
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg);
+            color: var(--ink);
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239e968a'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            transition: border-color 0.2s;
+        }
+
+        .currency-picker:focus { border-color: var(--accent); }
+
+        .swap-row {
+            display: flex;
+            justify-content: center;
+            margin: -0.4rem 0 1rem;
+        }
+
+        .swap-btn {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s ease;
+            color: var(--ink-muted);
+        }
+
+        .swap-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: rotate(180deg);
+            background: var(--accent-soft);
+        }
+
+        .swap-btn svg {
+            width: 18px; height: 18px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+        }
+
+        /* ── Result ── */
+        .result-box {
+            background: var(--bg-warm);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-top: 0.5rem;
+            border: 1px solid var(--border);
+        }
+
+        .result-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        .result-main {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            min-width: 0;
+        }
+
+        .result-amount {
+            font-family: 'DM Mono', monospace;
+            font-size: 2.2rem;
+            font-weight: 500;
+            color: var(--ink);
+            word-break: break-all;
+        }
+
+        .result-code {
+            font-family: 'DM Mono', monospace;
+            font-size: 1rem;
+            color: var(--ink-muted);
+            flex-shrink: 0;
+        }
+
+        /* ── Copy Button ── */
+        .copy-btn {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 14px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            background: var(--surface);
+            color: var(--ink-light);
+            font-family: 'Noto Sans SC', sans-serif;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-soft);
+        }
+
+        .copy-btn.copied {
+            border-color: var(--success);
+            color: var(--success);
+            background: rgba(74, 140, 92, 0.08);
+        }
+
+        .copy-btn svg {
+            width: 14px; height: 14px;
+            stroke: currentColor;
+            stroke-width: 2;
+            fill: none;
+            flex-shrink: 0;
+        }
+
+        .result-rates {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .rate-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+        }
+
+        .rate-line .label { color: var(--ink-muted); }
+        .rate-line .value {
+            font-family: 'DM Mono', monospace;
+            color: var(--ink-light);
+            font-size: 0.85rem;
+        }
+
+        .timestamp {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--ink-muted);
+            margin-top: 1.2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .footer {
+            margin-top: 2.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--ink-muted);
+            font-weight: 300;
+            animation: fadeUp 0.6s 0.2s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── Toast ── */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--ink);
+            color: #fff;
+            font-size: 0.85rem;
+            padding: 10px 24px;
+            border-radius: 10px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 999;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        @media (max-width: 520px) {
+            .header h1 { font-size: 2rem; }
+            .card { padding: 1.5rem; }
+            .field-input { font-size: 1.25rem; padding: 0.8rem; }
+            .currency-picker { width: 115px; font-size: 0.85rem; padding: 0.8rem 0.6rem; }
+            .result-amount { font-size: 1.8rem; }
+            .presets { gap: 0.4rem; }
+            .preset-btn { font-size: 0.72rem; padding: 5px 10px; }
+            .copy-btn { padding: 6px 10px; font-size: 0.72rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header">
+        <h1>Exchange <em>Rate</em></h1>
+        <p class="subtitle">实时汇率换算 · 多数据源保障</p>
+        <div class="status">
+            <span class="status-dot loading" id="statusDot"></span>
+            <span id="statusText">正在连接数据源…</span>
+        </div>
+    </header>
+
+    <main class="card">
+        <div class="presets">
+            <button class="preset-btn active" data-from="KRW" data-to="USD">KRW → USD</button>
+            <button class="preset-btn" data-from="CAD" data-to="USD">CAD → USD</button>
+            <button class="preset-btn" data-from="JPY" data-to="USD">JPY → USD</button>
+            <button class="preset-btn" data-from="EUR" data-to="USD">EUR → USD</button>
+            <button class="preset-btn" data-from="CNY" data-to="USD">CNY → USD</button>
+            <button class="preset-btn" data-from="GBP" data-to="USD">GBP → USD</button>
+        </div>
+
+        <div class="field">
+            <div class="field-label">金额</div>
+            <div class="field-row">
+                <input type="number" class="field-input" id="amount" placeholder="0" value="10000" min="0" step="any">
+                <select class="currency-picker" id="fromCurrency">
+                    <option value="KRW">KRW</option>
+                    <option value="CAD">CAD</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="JPY">JPY</option>
+                    <option value="CNY">CNY</option>
+                    <option value="HKD">HKD</option>
+                    <option value="TWD">TWD</option>
+                    <option value="SGD">SGD</option>
+                    <option value="AUD">AUD</option>
+                    <option value="CHF">CHF</option>
+                    <option value="MYR">MYR</option>
+                    <option value="THB">THB</option>
+                    <option value="PHP">PHP</option>
+                    <option value="IDR">IDR</option>
+                    <option value="INR">INR</option>
+                    <option value="RUB">RUB</option>
+                    <option value="BRL">BRL</option>
+                    <option value="MXN">MXN</option>
+                    <option value="ZAR">ZAR</option>
+                    <option value="SEK">SEK</option>
+                    <option value="NOK">NOK</option>
+                    <option value="DKK">DKK</option>
+                    <option value="PLN">PLN</option>
+                    <option value="TRY">TRY</option>
+                    <option value="NZD">NZD</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="swap-row">
+            <button class="swap-btn" id="swapBtn" title="交换货币">
+                <svg viewBox="0 0 24 24"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+
+        <div class="field">
+            <div class="field-label">转换为</div>
+            <div class="field-row">
+                <select class="currency-picker" id="toCurrency" style="width: 100%;">
+                    <option value="USD" selected>USD</option>
+                    <option value="KRW">KRW</option>
+                    <option value="CAD">CAD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="JPY">JPY</option>
+                    <option value="CNY">CNY</option>
+                    <option value="HKD">HKD</option>
+                    <option value="TWD">TWD</option>
+                    <option value="SGD">SGD</option>
+                    <option value="AUD">AUD</option>
+                    <option value="CHF">CHF</option>
+                    <option value="MYR">MYR</option>
+                    <option value="THB">THB</option>
+                    <option value="PHP">PHP</option>
+                    <option value="IDR">IDR</option>
+                    <option value="INR">INR</option>
+                    <option value="RUB">RUB</option>
+                    <option value="BRL">BRL</option>
+                    <option value="MXN">MXN</option>
+                    <option value="ZAR">ZAR</option>
+                    <option value="SEK">SEK</option>
+                    <option value="NOK">NOK</option>
+                    <option value="DKK">DKK</option>
+                    <option value="PLN">PLN</option>
+                    <option value="TRY">TRY</option>
+                    <option value="NZD">NZD</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 结果区域 -->
+        <div class="result-box">
+            <div class="result-top">
+                <div class="result-main">
+                    <span class="result-amount" id="resultAmount">—</span>
+                    <span class="result-code" id="resultCode">USD</span>
+                </div>
+                <button class="copy-btn" id="copyBtn" title="复制金额">
+                    <svg viewBox="0 0 24 24" id="copyIcon">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <span id="copyText">复制</span>
+                </button>
+            </div>
+            <div class="result-rates">
+                <div class="rate-line">
+                    <span class="label">正向汇率</span>
+                    <span class="value" id="rateForward">—</span>
+                </div>
+                <div class="rate-line">
+                    <span class="label">反向汇率</span>
+                    <span class="value" id="rateReverse">—</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="timestamp">
+            数据源：<span id="dataSource">—</span> · 更新于 <span id="updateTime">—</span>
+        </div>
+    </main>
+
+    <footer class="footer">
+        汇率仅供参考，实际交易以银行成交价为准
+    </footer>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast">已复制到剪贴板</div>
+
+<script>
+/* ── 多数据源汇率获取（自动降级） ── */
+
+const API_SOURCES = [
+    {
+        name: 'CurrencyAPI (jsDelivr CDN)',
+        fetch: async () => {
+            const res = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
+            if (!res.ok) throw new Error(res.status);
+            const data = await res.json();
+            return { rates: data.usd, date: data.date, source: 'CurrencyAPI' };
+        },
+        convert: (rates, from, to, amount) => {
+            const fromPerUSD = from === 'USD' ? 1 : rates[from.toLowerCase()];
+            const toPerUSD   = to   === 'USD' ? 1 : rates[to.toLowerCase()];
+            if (!fromPerUSD || !toPerUSD) throw new Error('Currency not found');
+            return (amount / fromPerUSD) * toPerUSD;
+        }
+    },
+    {
+        name: 'ExchangeRate-API',
+        fetch: async () => {
+            const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+            if (!res.ok) throw new Error(res.status);
+            const data = await res.json();
+            return { rates: data.rates, date: data.date, source: 'ExchangeRate-API' };
+        },
+        convert: (rates, from, to, amount) => {
+            const fromRate = from === 'USD' ? 1 : rates[from];
+            const toRate   = to   === 'USD' ? 1 : rates[to];
+            if (!fromRate || !toRate) throw new Error('Currency not found');
+            return (amount / fromRate) * toRate;
+        }
+    },
+    {
+        name: 'Open ER-API',
+        fetch: async () => {
+            const res = await fetch('https://open.er-api.com/v6/latest/USD');
+            if (!res.ok) throw new Error(res.status);
+            const data = await res.json();
+            return { rates: data.rates, date: data.time_last_update_utc, source: 'Open ER-API' };
+        },
+        convert: (rates, from, to, amount) => {
+            const fromRate = from === 'USD' ? 1 : rates[from];
+            const toRate   = to   === 'USD' ? 1 : rates[to];
+            if (!fromRate || !toRate) throw new Error('Currency not found');
+            return (amount / fromRate) * toRate;
+        }
+    }
+];
+
+let activeData = null;
+
+async function fetchRates() {
+    setStatus('loading', '正在连接数据源…');
+
+    for (const src of API_SOURCES) {
+        try {
+            const data = await src.fetch();
+            activeData = { ...data, convertFn: src.convert };
+            setStatus('ok', `已连接 · ${src.name}`);
+            document.getElementById('dataSource').textContent = src.name;
+            document.getElementById('updateTime').textContent = formatDate(data.date);
+            return;
+        } catch (e) {
+            console.warn(`[FAIL] ${src.name}:`, e.message);
+        }
+    }
+
+    setStatus('err', '所有数据源均不可用，请稍后重试');
+}
+
+function setStatus(type, text) {
+    document.getElementById('statusDot').className = 'status-dot ' + type;
+    document.getElementById('statusText').textContent = text;
+}
+
+function formatDate(raw) {
+    if (!raw) return '—';
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return raw;
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/* ── 转换 ── */
+
+// 当前转换结果的原始数值（用于复制）
+let lastRawResult = null;
+
+function convert() {
+    if (!activeData) return;
+
+    const amount = parseFloat(document.getElementById('amount').value) || 0;
+    const from = document.getElementById('fromCurrency').value;
+    const to   = document.getElementById('toCurrency').value;
+
+    try {
+        const result = activeData.convertFn(activeData.rates, from, to, amount);
+        const oneUnit = activeData.convertFn(activeData.rates, from, to, 1);
+        const reverseOne = activeData.convertFn(activeData.rates, to, from, 1);
+
+        // 保留原始数值用于复制
+        lastRawResult = result;
+
+        // 显示时四舍五入保留 1 位小数
+        const rounded = Math.round(result * 10) / 10;
+
+        document.getElementById('resultAmount').textContent = formatDisplay(rounded);
+        document.getElementById('resultCode').textContent = to;
+        document.getElementById('rateForward').textContent = `1 ${from} = ${formatRate(oneUnit)} ${to}`;
+        document.getElementById('rateReverse').textContent = `1 ${to} = ${formatRate(reverseOne)} ${from}`;
+    } catch (e) {
+        lastRawResult = null;
+        document.getElementById('resultAmount').textContent = '—';
+        document.getElementById('rateForward').textContent = '不支持的货币';
+        document.getElementById('rateReverse').textContent = '—';
+    }
+}
+
+// 显示格式：四舍五入保留 1 位小数，大数加千分位
+function formatDisplay(n) {
+    if (n === 0) return '0.0';
+    const fixed = n.toFixed(1); // 四舍五入到 1 位小数
+    const parts = fixed.split('.');
+    // 给整数部分加千分位逗号
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+}
+
+function formatRate(n) {
+    if (n >= 100)  return n.toFixed(2);
+    if (n >= 1)    return n.toFixed(4);
+    return n.toFixed(6);
+}
+
+/* ── 复制功能 ── */
+
+function copyResult() {
+    if (lastRawResult === null) return;
+
+    // 复制四舍五入后保留 1 位小数的值
+    const textToCopy = (Math.round(lastRawResult * 10) / 10).toFixed(1);
+
+    const btn = document.getElementById('copyBtn');
+    const label = document.getElementById('copyText');
+    const icon = document.getElementById('copyIcon');
+
+    // 用 Clipboard API
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            showCopyFeedback(btn, label, icon, textToCopy);
+        }).catch(() => {
+            fallbackCopy(textToCopy, btn, label, icon);
+        });
+    } else {
+        fallbackCopy(textToCopy, btn, label, icon);
+    }
+}
+
+function fallbackCopy(text, btn, label, icon) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;left:-9999px;';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        document.execCommand('copy');
+        showCopyFeedback(btn, label, icon, text);
+    } catch (e) {
+        showToast('复制失败，请手动复制');
+    }
+    document.body.removeChild(ta);
+}
+
+function showCopyFeedback(btn, label, icon, text) {
+    // 按钮变绿 + 打勾图标
+    btn.classList.add('copied');
+    label.textContent = '已复制';
+    icon.innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+
+    showToast(`已复制: ${text}`);
+
+    setTimeout(() => {
+        btn.classList.remove('copied');
+        label.textContent = '复制';
+        icon.innerHTML = '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>';
+    }, 1800);
+}
+
+function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+/* ── 事件绑定 ── */
+
+function debounce(fn, ms) {
+    let t;
+    return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+function syncPresetBtns() {
+    const from = document.getElementById('fromCurrency').value;
+    const to   = document.getElementById('toCurrency').value;
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.classList.toggle('active',
+            btn.dataset.from === from && btn.dataset.to === to
+        );
+    });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await fetchRates();
+    convert();
+
+    const amountEl = document.getElementById('amount');
+    const fromEl   = document.getElementById('fromCurrency');
+    const toEl     = document.getElementById('toCurrency');
+
+    amountEl.addEventListener('input', debounce(convert, 200));
+    fromEl.addEventListener('change', () => { syncPresetBtns(); convert(); });
+    toEl.addEventListener('change', () => { syncPresetBtns(); convert(); });
+
+    document.getElementById('swapBtn').addEventListener('click', () => {
+        const tmp = fromEl.value;
+        fromEl.value = toEl.value;
+        toEl.value = tmp;
+        syncPresetBtns();
+        convert();
+    });
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            fromEl.value = btn.dataset.from;
+            toEl.value   = btn.dataset.to;
+            if (!amountEl.value || parseFloat(amountEl.value) === 0) {
+                amountEl.value = 10000;
+            }
+            document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            convert();
+        });
+    });
+
+    // 复制按钮
+    document.getElementById('copyBtn').addEventListener('click', copyResult);
+
+    // 每 10 分钟刷新
+    setInterval(async () => {
+        await fetchRates();
+        convert();
+    }, 600000);
+});
+</script>
+
+</body>
+</html>
