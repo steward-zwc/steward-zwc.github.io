@@ -1,212 +1,706 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="zh-CN">
 <head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AA / eService 跳转工具</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #e8edf2;
+      --card: #ffffff;
+      --ink: #1a2332;
+      --muted: #5c6b7e;
+      --line: #d4dce6;
+      --primary: #1565a8;
+      --primary-dim: #e8f1fa;
+      --accent: #d35400;
+      --hk: #0d7a6e;
+      --hk-bg: #e6f5f3;
+      --mc: #6b3fa0;
+      --mc-bg: #f3ebfa;
+      --ok: #15803d;
+      --radius: 10px;
+      --gap: 10px;
+      --shadow: 0 1px 2px rgba(26, 35, 50, 0.06), 0 4px 16px rgba(26, 35, 50, 0.05);
+    }
 
-  <title>aa/eService跳转</title>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans SC', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.45;
+      min-height: 100vh;
+      padding: 16px;
+    }
+
+    .page-wrap {
+      width: 60%;
+      min-width: 340px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* 线框布局：快捷 | SIT+ES | Local 通栏 | 测试+记事本 */
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto auto minmax(88px, auto);
+      gap: var(--gap);
+      width: 100%;
+    }
+
+    .block {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .block-span2 { grid-column: 1 / -1; }
+
+    .block-head {
+      flex-shrink: 0;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fafbfd 0%, #f4f7fa 100%);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      letter-spacing: 0.02em;
+    }
+
+    .block-body {
+      flex: 1;
+      min-height: 0;
+      padding: 10px 12px;
+      overflow: auto;
+    }
+
+    /* ── 快捷跳转 ── */
+    .quick-bar-content {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .quick-creds {
+      display: flex;
+      gap: 8px;
+      flex: 1 1 280px;
+      min-width: 0;
+    }
+
+    .quick-creds .cred-row {
+      flex: 1;
+      min-width: 120px;
+    }
+
+    .quick-btns {
+      display: flex;
+      gap: 8px;
+      flex: 2 1 320px;
+      min-width: 0;
+    }
+
+    .btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: inherit;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #fff;
+      transition: filter 0.15s, transform 0.1s;
+    }
+
+    .btn:hover { filter: brightness(1.06); }
+    .btn:active { transform: scale(0.99); }
+
+    .btn-hk { background: linear-gradient(180deg, #0f8a7c, var(--hk)); }
+    .btn-mc { background: linear-gradient(180deg, #8254b8, var(--mc)); }
+    .btn-es { background: linear-gradient(180deg, #1a7bc4, var(--primary)); }
+
+    /* ── 凭据 ── */
+    .cred-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      background: var(--primary-dim);
+      border-radius: 8px;
+      border: 1px solid #c5d9eb;
+    }
+
+    .cred-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .cred-value {
+      flex: 1;
+      min-width: 0;
+      font-family: 'Consolas', ui-monospace, monospace;
+      font-size: 12px;
+      color: var(--ink);
+    }
+
+    .btn-copy {
+      flex-shrink: 0;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-family: inherit;
+      font-weight: 500;
+      color: var(--primary);
+      background: #fff;
+      border: 1px solid #b8cfe4;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .btn-copy:hover { background: #f0f7ff; }
+    .btn-copy.copied { color: var(--ok); border-color: #86efac; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .region-toggle {
+      display: inline-flex;
+      padding: 2px;
+      background: #eef2f6;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+    }
+
+    .region-toggle label { cursor: pointer; position: relative; }
+    .region-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+
+    .region-toggle span {
+      display: block;
+      padding: 4px 14px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 6px;
+      color: var(--muted);
+    }
+
+    .region-toggle input:checked + span.hk { background: var(--hk); color: #fff; }
+    .region-toggle input:checked + span.mc { background: var(--mc); color: #fff; }
+
+    .tag-prefix {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+    .tag-prefix.hk { background: var(--hk-bg); color: var(--hk); }
+    .tag-prefix.mc { background: var(--mc-bg); color: var(--mc); }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: inherit;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fafbfc;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(21, 101, 168, 0.15);
+      background: #fff;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 6px 8px;
+      background: #f4f7fa;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+
+    .hint strong { color: var(--ink); }
+
+    .btn-go {
+      width: 100%;
+      padding: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: inherit;
+      color: #fff;
+      background: linear-gradient(180deg, #e86f1a, var(--accent));
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .btn-go:hover { filter: brightness(1.05); }
+
+    .url-preview {
+      margin-top: 6px;
+      font-size: 10px;
+      color: var(--muted);
+      font-family: ui-monospace, monospace;
+      word-break: break-all;
+      line-height: 1.35;
+    }
+
+    /* ── AA Local 通栏 ── */
+    .local-inner {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    @media (max-width: 900px) {
+      .local-inner {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto auto;
+      }
+      .local-go { grid-column: 1 / -1; }
+    }
+
+    .local-inner .toolbar { margin-bottom: 0; }
+
+    .btn-go-inline {
+      padding: 7px 20px;
+      white-space: nowrap;
+      height: 34px;
+    }
+
+    /* ── 底部 ── */
+    .test-data {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .test-data a { color: var(--primary); text-decoration: none; }
+    .test-data a:hover { text-decoration: underline; }
+
+    .block-notes .block-body {
+      padding: 8px 10px;
+      display: flex;
+    }
+
+  .block-notes textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 12px;
+      font-family: inherit;
+      resize: none;
+      background: #fafbfc;
+    }
+
+    .block-notes textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      padding: 8px 14px;
+      background: var(--ink);
+      color: #fff;
+      font-size: 12px;
+      border-radius: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 99;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 900px) {
+      .page-wrap { width: 92%; }
+    }
+
+    @media (max-width: 768px) {
+      .layout {
+        grid-template-rows: auto;
+      }
+
+      .block-span2,
+      .block-sit,
+      .block-es,
+      .block-test,
+      .block-notes {
+        grid-column: 1 / -1;
+      }
+
+      .field-row { grid-template-columns: 1fr; }
+      .quick-bar-content { flex-direction: column; }
+      .quick-creds, .quick-btns { flex-direction: column; width: 100%; }
+    }
+  </style>
 </head>
-
 <body>
-  <h1>AA:SIT环境跳转</h1>
-  <button onclick="loginHKAA()" class="defaultLogin" title="https://uat-eservices.fwd.com.hk/aa2/fwd/landing/agpt/06021/token">一键访问HK AA2 -06021</button>
-  <button onclick="loginMCAA()" class="defaultLogin" title="https://uat-eservices.fwd.com.hk/MCaa2/fwd/landing/agpt/80002/token">一键访问 MC AA2 -80002</button>
-  <button onclick="logineService()" class="defaultLogin" title="https://uat-eservices.fwd.com.hk/web31/fwd/login/index">一键访问 eService web31</button>
+  <div class="page-wrap">
+  <div class="layout">
+    <!-- ① 快捷跳转 通栏 -->
+    <section class="block block-span2 block-quick">
+      <div class="block-head">快捷跳转</div>
+      <div class="block-body" style="padding: 10px 12px;">
+        <div class="quick-bar-content">
+          <div class="quick-creds">
+            <div class="cred-row">
+              <span class="cred-label">账号</span>
+              <code class="cred-value" id="credAaUser">fwd.uat</code>
+              <button type="button" class="btn-copy" data-copy-target="credAaUser">复制</button>
+            </div>
+            <div class="cred-row">
+              <span class="cred-label">密码</span>
+              <code class="cred-value" id="credAaPass">1234@Fwd</code>
+              <button type="button" class="btn-copy" data-copy-target="credAaPass">复制</button>
+            </div>
+          </div>
+          <div class="quick-btns">
+            <button type="button" class="btn btn-hk" onclick="loginHKAA()"
+              title="https://uat-eservices.fwd.com.hk/aa2/fwd/landing/agpt/06021/token">HK AA2 · 06021</button>
+            <button type="button" class="btn btn-mc" onclick="loginMCAA()"
+              title="https://uat-eservices.fwd.com.hk/MCaa2/fwd/landing/agpt/80002/token">Macau AA2 · 80002</button>
+            <button type="button" class="btn btn-es" onclick="logineService()"
+              title="https://uat-eservices.fwd.com.hk/web31/fwd/login/index">eService web31</button>
+          </div>
+        </div>
+      </div>
+    </section>
 
-  <h6>选择SIT环境(默认访问HK AA，在复选框打√则访问Macau AA)</h6>
-  <input type="text" class="displayCity" id="display">
-  <input type="checkbox" class="selectCity" id="checkbox">
-  <!-- <input type="text" class="displayCity" id="display"> -->
+    <!-- ② AA SIT -->
+    <section class="block block-sit">
+      <div class="block-head">AA SIT</div>
+      <div class="block-body">
+        <div class="toolbar">
+          <div class="region-toggle" role="group" aria-label="SIT 地区">
+            <label><input type="radio" name="sit_region" value="HK" checked><span class="hk">香港 HK</span></label>
+            <label><input type="radio" name="sit_region" value="MC"><span class="mc">澳门 MC</span></label>
+          </div>
+          <span class="tag-prefix hk" id="sitPrefixDisplay">aa</span>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="input_sit_env">环境序号</label>
+            <input type="text" id="input_sit_env" placeholder="如 2 → aa2" inputmode="numeric">
+          </div>
+          <div class="field">
+            <label for="input_sit_agent_code">Agent ID</label>
+            <input type="text" id="input_sit_agent_code" value="06021">
+          </div>
+        </div>
+        <div class="hint" id="sitAgentHint"><strong>HK：</strong>06021 · 06035 · 06734 · 16548 · 08431 · 22749</div>
+        <button type="button" class="btn-go" onclick="openAASit()">打开 SIT AA</button>
+        <div class="url-preview" id="sitUrlPreview">URL 预览</div>
+      </div>
+    </section>
 
-  <input type="text" id="input_sit_env" placeholder="请输入环境序号，例如6 则会访问 aa6 ">
-  <h6>输入AgentId (如：06021 / 80002)</h6>
-  <input type="text" class="copyId" id="displayId">
-  <input type="text" id="input_sit_agent_code" placeholder="请输入agentId" class="number">
-  <button onclick="openAASit()">Go To SIT AA</button>
+    <!-- ② eService SIT -->
+    <section class="block block-es">
+      <div class="block-head">eService SIT</div>
+      <div class="block-body">
+        <div class="cred-row" style="margin-bottom: 10px;">
+          <span class="cred-label">密码</span>
+          <code class="cred-value" id="credEsPass">0000@Fwd</code>
+          <button type="button" class="btn-copy" data-copy-target="credEsPass">复制</button>
+        </div>
+        <div class="field">
+          <label for="input_web_number">Web 环境序号</label>
+          <input type="text" id="input_web_number" placeholder="如 31 → web31" inputmode="numeric">
+        </div>
+        <button type="button" class="btn-go" style="margin-top: 10px;" onclick="openeService()">打开 SIT eService</button>
+      </div>
+    </section>
 
-  <h1>eService:SIT环境跳转</h1>
-  <h6>输入web的序号数字 (如:31) &nbsp;es密码: 0000@Fwd</h6>
-  <input type="text" id="input_web_number" placeholder="请输入环境序号#例如31">
-  <button id="eService" onclick="openeService()">Go To SIT eService</button>
+    <!-- ③ AA Local 通栏 -->
+    <section class="block block-span2 block-local">
+      <div class="block-head">AA Local</div>
+      <div class="block-body">
+        <div class="local-inner">
+          <div class="toolbar">
+            <div class="region-toggle" role="group" aria-label="Local 地区">
+              <label><input type="radio" name="local_region" value="HK" checked><span class="hk">香港 HK</span></label>
+              <label><input type="radio" name="local_region" value="MC"><span class="mc">澳门 MC</span></label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="input_local">Agent ID</label>
+            <input type="text" id="input_local" value="06021">
+          </div>
+          <div class="field">
+            <label for="input_local_port">本地端口</label>
+            <input type="number" id="input_local_port" min="1" max="65535" value="4200">
+          </div>
+          <button type="button" class="btn-go btn-go-inline local-go" onclick="openLocal()">打开 Local</button>
+        </div>
+        <div class="hint" id="localAgentHint" style="margin-top: 8px; margin-bottom: 0;">HK → localhost:4200 · MC → 127.0.0.1:4200</div>
+        <div class="url-preview" id="localUrlPreview"></div>
+      </div>
+    </section>
 
-  <p>常用test data:</p>
-  <p>Visa 16位卡号: 4508751050003820  &nbsp;&nbsp; FWD CC : 6250290003006666</p>
-  <p>HK ID: K1226878 C8176459 P2962369  D6002693 Q8382871 <a href="https://pinkylam.me/playground/hkid/">点击跳转到在线生成HKID网址</a></p>
+    <!-- ④ 测试数据 | 记事本 -->
+    <section class="block block-test">
+      <div class="block-head">Test Data</div>
+      <div class="block-body test-data">
+        <p>Visa：4508751050003820 &nbsp;·&nbsp; FWD CC：6250290003006666</p>
+        <p>HKID：K1226878 · C8176459 · P2962369 · D6002693 · Q8382871</p>
+        <p><a href="https://pinkylam.me/playground/hkid/" target="_blank" rel="noopener">在线生成 HKID →</a></p>
+      </div>
+    </section>
 
-  <textarea class="edit" type="text" placeholder="临时记事本"></textarea>
+    <section class="block block-notes">
+      <div class="block-head">临时记事本</div>
+      <div class="block-body">
+        <textarea id="scratchpad" placeholder="粘贴备注、token…"></textarea>
+      </div>
+    </section>
+  </div>
+  </div>
 
-  <h1>AA:Local跳转</h1>
-  <input type="text" id="input_local" placeholder="请输入AgentId,例如'06021'">
-  <button onclick="openLocal()">Go To Local AA</button>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
-    const cityAA='HK AA'
-    function openLocal() {
-      if (document.getElementById('input_local').value.length < 5) {
-        alert('请输入正确的代理号码');
-        return;
-      }
-      window.open('http://localhost:4200/fwd/landing/agtp/' + document.getElementById('input_local').value + '/token');
+    const UAT_BASE = 'https://uat-eservices.fwd.com.hk/';
+    const HK_AGENT_HINT = '06021 · 06035 · 06734 · 16548 · 08431 · 22749';
+    const MC_AGENT_HINT = '80002 · 80101 · 80702 · 81273 · 80308 · 80425';
+    const LOCAL_HOST = { HK: 'localhost', MC: '127.0.0.1' };
+    const LOCAL_DEFAULT_PORT = 4200;
+    const DEFAULT_AGENT = { HK: '06021', MC: '80002' };
+
+    function defaultAgentId(isMc) {
+      return isMc ? DEFAULT_AGENT.MC : DEFAULT_AGENT.HK;
     }
+
+    function isMcSit() {
+      return document.querySelector('input[name="sit_region"]:checked').value === 'MC';
+    }
+
+    function isMcLocal() {
+      return document.querySelector('input[name="local_region"]:checked').value === 'MC';
+    }
+
+    function getSitPrefix() {
+      return isMcSit() ? 'MCaa' : 'aa';
+    }
+
+    function buildSitUrl(env, agentId) {
+      const prefix = getSitPrefix();
+      return UAT_BASE + prefix + (env || '').trim() + '/fwd/landing/agpt/' + (agentId || '').trim() + '/token';
+    }
+
+    function buildLocalUrl(agentId) {
+      const host = isMcLocal() ? LOCAL_HOST.MC : LOCAL_HOST.HK;
+      const port = document.getElementById('input_local_port').value || LOCAL_DEFAULT_PORT;
+      return 'http://' + host + ':' + port + '/fwd/landing/agtp/' + (agentId || '').trim() + '/token';
+    }
+
+    function validateAgentId(value) {
+      if ((value || '').trim().length < 5) {
+        alert('请输入正确的代理号码（至少 5 位）');
+        return false;
+      }
+      return true;
+    }
+
+    function openLocal() {
+      const agentId = document.getElementById('input_local').value;
+      if (!validateAgentId(agentId)) return;
+      window.open(buildLocalUrl(agentId));
+    }
+
     function openAASit() {
-      if (document.getElementById('input_sit_agent_code').value.length < 5) {
-        alert('请输入正确的代理号码');
+      const env = document.getElementById('input_sit_env').value;
+      const agentId = document.getElementById('input_sit_agent_code').value;
+      if (!validateAgentId(agentId)) return;
+      if (!(env || '').trim()) {
+        alert('请输入环境序号，例如 2');
         return;
       }
-      
-      window.open('https://uat-eservices.fwd.com.hk/' + display.value+document.getElementById('input_sit_env').value + '/fwd/landing/agpt/' + document.getElementById('input_sit_agent_code').value.trim() + '/token');
+      window.open(buildSitUrl(env, agentId));
     }
 
     function openeService() {
-      window.open('https://uat-eservices.fwd.com.hk/web' + document.getElementById('input_web_number').value + '/fwd/login/index');
+      const web = document.getElementById('input_web_number').value.trim();
+      if (!web) {
+        alert('请输入 web 环境序号，例如 31');
+        return;
+      }
+      window.open(UAT_BASE + 'web' + web + '/fwd/login/index');
     }
 
     function loginHKAA() {
       window.open('https://uat-eservices.fwd.com.hk/aa2/fwd/landing/agpt/06021/token');
     }
+
     function loginMCAA() {
-      window.open("https://uat-eservices.fwd.com.hk/MCaa2/fwd/landing/agpt/80002/token");
+      window.open('https://uat-eservices.fwd.com.hk/MCaa2/fwd/landing/agpt/80002/token');
     }
 
     function logineService() {
-      window.open("https://uat-eservices.fwd.com.hk/web31/fwd/login/index");
+      window.open('https://uat-eservices.fwd.com.hk/web31/fwd/login/index');
     }
 
+    let toastTimer;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 2000);
+    }
 
-    const inputList = [
-      {
-      id: 'input_local',
-      fun: openLocal
-      },
-      {
-      id: 'input_sit_agent_code',
-      fun: openAASit
-      },
-      {
-      id: 'input_sit_env',
-      fun: openAASit
-      },
-      {
-      id: 'input_web_number',
-      fun: openeService
+    function copyText(text, label) {
+      const value = (text || '').toString();
+      function done() { showToast('已复制' + (label ? '：' + label : '')); }
+      function fallback() {
+        return new Promise(function (resolve, reject) {
+          const ta = document.createElement('textarea');
+          ta.value = value;
+          ta.style.cssText = 'position:fixed;left:-9999px';
+          document.body.appendChild(ta);
+          ta.select();
+          try {
+            document.execCommand('copy') ? (done(), resolve()) : reject();
+          } catch (e) { reject(e); }
+          document.body.removeChild(ta);
+        });
       }
-  ]
-    inputList.forEach((item) => {
-      const input = document.getElementById(item.id);
-      input.addEventListener("keydown", function (event) {
-        if (event.key === "Enter") {
-          item.fun()
-        }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(value).then(done).catch(fallback);
+      }
+      return fallback();
+    }
+
+    function flashCopyBtn(btn) {
+      btn.classList.add('copied');
+      btn.textContent = '已复制';
+      setTimeout(function () {
+        btn.classList.remove('copied');
+        btn.textContent = '复制';
+      }, 1500);
+    }
+
+    document.querySelectorAll('.btn-copy').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const id = btn.getAttribute('data-copy-target');
+        const label = id === 'credAaUser' ? '账号' : id === 'credAaPass' ? '密码' : 'eService 密码';
+        copyText(document.getElementById(id).textContent.trim(), label)
+          .then(function () { flashCopyBtn(btn); })
+          .catch(function () { alert('复制失败'); });
       });
-    })
-
-    //选择HK AA 或 Macau AA
-    const checkbox = document.getElementById('checkbox');
-    const display = document.getElementById('display');
-    const displayAgentId = document.getElementById('displayId');
-    const hkAgentId = '常用:06021 06035 06734 16548 08431 22749'
-    const mcAgentId = '常用:80002 80101 80702 81273 80308 80425 '
-    display.value = checkbox.checked ? 'MCaa' : 'aa';
-    displayAgentId.value = checkbox.checked ? mcAgentId : hkAgentId;
-
-    checkbox.addEventListener('change', function() {
-      display.value = checkbox.checked ? 'MCaa' : 'aa';
-      displayAgentId.value = checkbox.checked ? mcAgentId : hkAgentId;
     });
 
+    function updateSitUi() {
+      const mc = isMcSit();
+      const prefix = getSitPrefix();
+      const el = document.getElementById('sitPrefixDisplay');
+      el.textContent = prefix;
+      el.className = 'tag-prefix ' + (mc ? 'mc' : 'hk');
+      document.getElementById('input_sit_agent_code').value = defaultAgentId(mc);
+      document.getElementById('sitAgentHint').innerHTML =
+        '<strong>' + (mc ? 'MC' : 'HK') + '：</strong>' + (mc ? MC_AGENT_HINT : HK_AGENT_HINT);
+      updateSitPreview();
+    }
 
+    function updateSitPreview() {
+      const env = document.getElementById('input_sit_env').value;
+      const agentId = document.getElementById('input_sit_agent_code').value.trim();
+      document.getElementById('sitUrlPreview').textContent =
+        env && agentId.length >= 5 ? buildSitUrl(env, agentId) : 'URL 预览';
+    }
+
+    function updateLocalUi() {
+      const mc = isMcLocal();
+      const portEl = document.getElementById('input_local_port');
+      if (!portEl.dataset.userEdited) {
+        portEl.value = LOCAL_DEFAULT_PORT;
+      }
+      const host = mc ? LOCAL_HOST.MC : LOCAL_HOST.HK;
+      document.getElementById('input_local').value = defaultAgentId(mc);
+      document.getElementById('localAgentHint').textContent =
+        (mc ? 'MC' : 'HK') + ' → ' + host + ':' + portEl.value + '/fwd/landing/agtp/…';
+      updateLocalPreview();
+    }
+
+    function updateLocalPreview() {
+      const agentId = document.getElementById('input_local').value.trim();
+      document.getElementById('localUrlPreview').textContent =
+        agentId.length >= 5 ? buildLocalUrl(agentId) : '';
+    }
+
+    document.querySelectorAll('input[name="sit_region"]').forEach(function (r) {
+      r.addEventListener('change', updateSitUi);
+    });
+    document.querySelectorAll('input[name="local_region"]').forEach(function (r) {
+      r.addEventListener('change', updateLocalUi);
+    });
+    document.getElementById('input_local_port').addEventListener('input', function () {
+      this.dataset.userEdited = '1';
+      updateLocalUi();
+    });
+    ['input_sit_env', 'input_sit_agent_code'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', updateSitPreview);
+    });
+    document.getElementById('input_local').addEventListener('input', updateLocalPreview);
+
+    [
+      { id: 'input_local', fun: openLocal },
+      { id: 'input_sit_agent_code', fun: openAASit },
+      { id: 'input_sit_env', fun: openAASit },
+      { id: 'input_web_number', fun: openeService }
+    ].forEach(function (item) {
+      document.getElementById(item.id).addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') item.fun();
+      });
+    });
+
+    updateSitUi();
+    updateLocalUi();
   </script>
-
-
-
-
-  <style>
-    button {
-      background-color: orange;
-      border: none;
-      color: white;
-      padding: 15px 32px;
-      text-align: center;
-      text-decoration: none;
-      display: inline-block;
-      font-size: 16px;
-      margin: 4px 2px;
-      cursor: pointer;
-      border-radius: 10px;
-    }
-    .defaultLogin{
-      background-color: yellowgreen;
-      width: 180px;
-      height: 50px;
-      border: none;
-      color: white;
-      padding: 15px 15px;
-      text-align: center;
-      text-decoration: none;
-      display: inline-block;
-      font-size: 12px;
-      margin: 4px 2px;
-      cursor: pointer;
-      border-radius: 10px;
-    }
-
-    button:hover {
-      background-color: #4CAF50;
-    }
-
-    input {
-      padding: 10px;
-      margin: 10px;
-      width: 400px;
-    }
-
-    h1 {
-      margin: 5px;
-    }
-
-    h6,p {
-      padding: 10px;
-      margin: 1px 0;
-      font-size: 12px;
-    }
-
-    .edit{
-      width: 500px;
-      height: 200px;
-      padding: 10px;
-      margin: 10px;
-    }
-    .city{
-      width: 80px;
-    }
-    .selectCity{
-      width: 20px;
-      height: 20px;
-      border-color: blue;
-    }
-    .displayCity{
-      width: 50px;
-      border: none;
-      border-radius: 20%;
-      background-color: aqua;
-      font-size: 18px;
-    }
-
-    .number{
-      width: 100px;
-    }
-
-    .copyId{
-      border: none;
-      width: 300px;
-
-    }
-  
-
-
-  </style>
-
-
 </body>
-
 </html>
