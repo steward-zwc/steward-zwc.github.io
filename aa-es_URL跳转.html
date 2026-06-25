@@ -391,12 +391,10 @@
         <div class="quick-bar-content">
           <div class="quick-creds">
             <div class="cred-row">
-              <span class="cred-label">账号</span>
               <code class="cred-value" id="credAaUser">fwd.uat</code>
               <button type="button" class="btn-copy" data-copy-target="credAaUser">复制</button>
             </div>
             <div class="cred-row">
-              <span class="cred-label">密码</span>
               <code class="cred-value" id="credAaPass">1234@Fwd</code>
               <button type="button" class="btn-copy" data-copy-target="credAaPass">复制</button>
             </div>
@@ -445,7 +443,6 @@
       <div class="block-head">eService SIT</div>
       <div class="block-body">
         <div class="cred-row" style="margin-bottom: 10px;">
-          <span class="cred-label">密码</span>
           <code class="cred-value" id="credEsPass">0000@Fwd</code>
           <button type="button" class="btn-copy" data-copy-target="credEsPass">复制</button>
         </div>
@@ -628,7 +625,7 @@
     document.querySelectorAll('.btn-copy').forEach(function (btn) {
       btn.addEventListener('click', function () {
         const id = btn.getAttribute('data-copy-target');
-        const label = id === 'credAaUser' ? '账号' : id === 'credAaPass' ? '密码' : 'eService 密码';
+        const label = '';
         copyText(document.getElementById(id).textContent.trim(), label)
           .then(function () { flashCopyBtn(btn); })
           .catch(function () { alert('复制失败'); });
